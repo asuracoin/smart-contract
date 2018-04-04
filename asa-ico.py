@@ -6,31 +6,19 @@ from asa.token import *
 from asa.crowdsale import *
 from asa.nep5 import *
 
-
 ctx = GetContext()
 NEP5_METHODS = ['name', 'symbol', 'decimals', 'totalSupply', 'balanceOf', 'transfer', 'transferFrom', 'approve', 'allowance']
-
 
 def Main(operation, args):
 
     trigger = GetTrigger()
 
-    # This is used in the Verification portion of the contract
-    # To determine whether a transfer of system assets (NEO) involving
-    # This contract's address can proceed
     if trigger == Verification():
 
-        # check if the invoker is the owner of this contract
-        is_owner = CheckWitness(TOKEN_OWNER)
-
-        # If owner, proceed
-        if is_owner:
+        if CheckWitness(TOKEN_OWNER):
             return True
 
-        # Otherwise, we need to lookup the assets and determine
-        # If attachments of assets is ok
-        attachments = get_asset_attachments()
-        return can_exchange(ctx, attachments, True)
+        return can_exchange(ctx, get_asset_attachments(), True)
 
     elif trigger == Application():
 
@@ -38,13 +26,18 @@ def Main(operation, args):
             if operation == op:
                 return handle_nep51(ctx, operation, args)
 
+
+        # TOKEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
         if operation == 'deploy':
-            return deploy()
+            return deploy(ctx)
 
         elif operation == 'circulation':
             return get_circulation(ctx)
 
-        # the following are handled by crowdsale
+
+        # CROWDSALE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
         elif operation == 'mintTokens':
             return perform_exchange(ctx)
 
@@ -56,21 +49,5 @@ def Main(operation, args):
 
         elif operation == 'crowdsale_available':
             return crowdsale_available_amount(ctx)
-
-        elif operation == 'get_attachments':
-            return get_asset_attachments()
-
-    return False
-
-
-def deploy():
-    if not CheckWitness(TOKEN_OWNER):
-        print("Must be owner to deploy")
-        return False
-
-    if not Get(ctx, 'initialized'):
-        Put(ctx, 'initialized', 1)
-        Put(ctx, TOKEN_OWNER, TOKEN_INITIAL_AMOUNT)
-        return add_to_circulation(ctx, TOKEN_INITIAL_AMOUNT)
 
     return False

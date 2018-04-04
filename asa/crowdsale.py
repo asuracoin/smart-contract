@@ -6,11 +6,26 @@ from boa.builtins import concat
 from asa.token import *
 from asa.txio import get_asset_attachments
 
-OnInvalidKYCAddress = RegisterAction('invalid_registration', 'address')
-OnKYCRegister = RegisterAction('kyc_registration', 'address')
-OnTransfer = RegisterAction('transfer', 'addr_from', 'addr_to', 'amount')
-OnRefund = RegisterAction('refund', 'addr_to', 'amount')
+# OnInvalidKYCAddress = RegisterAction('invalid_registration', 'address')
+# OnKYCRegister = RegisterAction('kyc_registration', 'address')
+# OnKYCUnregister = RegisterAction('kyc_unregistration', 'address')
+# OnTransfer = RegisterAction('transfer', 'addr_from', 'addr_to', 'amount')
+# OnRefund = RegisterAction('refund', 'addr_to', 'amount')
 
+TOKENS_PER_NEO = 500 * 100_000_000
+
+# maximum amount you can mint in the limited round ( 500 neo/person * 40 Tokens/NEO * 10^8 )
+MAX_EXCHANGE_LIMITED_ROUND = 500 * 500 * 100_000_000
+
+# when to start the crowdsale
+# BLOCK_SALE_START = 10
+
+# when to end the initial limited round
+# LIMITED_ROUND_END = 999_999_999_999
+
+KYC_KEY = b'kyc_ok'
+
+LIMITED_ROUND_KEY = b'r1'
 
 def kyc_register(ctx, args):
 
@@ -25,8 +40,26 @@ def kyc_register(ctx, args):
                 kyc_storage_key = concat(KYC_KEY, address)
                 Put(ctx, kyc_storage_key, True)
 
-                OnKYCRegister(address)
+                # OnKYCRegister(address)
                 ok_count += 1
+
+    return ok_count
+
+def kyc_unregister(ctx, args):
+
+    ok_count = 0
+
+    if CheckWitness(TOKEN_OWNER):
+
+        for address in args:
+
+            if len(address) == 20:
+
+                kyc_storage_key = concat(KYC_KEY, address)
+                Delete(ctx, kyc_storage_key)
+
+                # OnKYCRUnregister(address)
+                ok_count -= 1
 
     return ok_count
 
@@ -34,13 +67,14 @@ def kyc_register(ctx, args):
 def kyc_status(ctx, args):
 
     if len(args) > 0:
-        addr = args[0]
-
-        kyc_storage_key = concat(KYC_KEY, addr)
-
-        return Get(ctx, kyc_storage_key)
+        return get_kyc_status(ctx, args[0])
 
     return False
+
+
+def get_kyc_status(ctx, address):
+
+    return Get(ctx, concat(KYC_KEY, address))
 
 
 def perform_exchange(ctx):
@@ -68,9 +102,6 @@ def perform_exchange(ctx):
     # calculate the amount of tokens the attached neo will earn
     exchanged_tokens = attachments[2] * TOKENS_PER_NEO / 100000000
 
-    # if you want to exchange gas instead of neo, use this
-    exchanged_tokens += attachments[3] * TOKENS_PER_GAS / 100000000
-
     # add it to the the exchanged tokens and persist in storage
     new_total = exchanged_tokens + current_balance
     Put(ctx, attachments[1], new_total)
@@ -79,7 +110,7 @@ def perform_exchange(ctx):
     result = add_to_circulation(ctx, exchanged_tokens)
 
     # dispatch transfer event
-    OnTransfer(attachments[0], attachments[1], exchanged_tokens)
+    # OnTransfer(attachments[0], attachments[1], exchanged_tokens)
 
     return True
 
@@ -94,8 +125,6 @@ def can_exchange(ctx, attachments, verify_only):
     # the following looks up whether an address has been
     # registered with the contract for KYC regulations
     # this is not required for operation of the contract
-
-    status = get_kyc_status(attachments.sender_addr, storage)
     if not get_kyc_status(ctx, attachments[1]):
         return False
 
@@ -107,13 +136,6 @@ def can_exchange(ctx, attachments, verify_only):
     return exchange_ok
 
 
-def get_kyc_status(ctx, address):
-
-    kyc_storage_key = concat(KYC_KEY, address)
-
-    return Get(ctx, kyc_storage_key)
-
-
 def calculate_can_exchange(ctx, amount, address, verify_only):
 
     height = GetHeight()
@@ -123,9 +145,6 @@ def calculate_can_exchange(ctx, amount, address, verify_only):
     new_amount = current_in_circulation + amount
 
     if new_amount > TOKEN_TOTAL_SUPPLY:
-        return False
-
-    if height < BLOCK_SALE_START:
         return False
 
     # if we are in free round, any amount
