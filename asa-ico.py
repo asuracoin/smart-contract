@@ -2,12 +2,12 @@ from boa.interop.Neo.Runtime import GetTrigger, CheckWitness
 from boa.interop.Neo.TriggerType import Application, Verification
 from boa.interop.Neo.Storage import *
 from asa.txio import get_asset_attachments
-from asa.token import *
-from asa.crowdsale import *
-from asa.nep5 import *
+from asa.token import TOKEN_OWNER,
+from asa.nep5 import NEP5_METHODS, handle_nep51
+from asa.sale import *
+from asa.kyc import *
 
 ctx = GetContext()
-NEP5_METHODS = ['name', 'symbol', 'decimals', 'totalSupply', 'balanceOf', 'transfer', 'transferFrom', 'approve', 'allowance']
 
 def Main(operation, args):
 
@@ -36,16 +36,22 @@ def Main(operation, args):
             return get_circulation(ctx)
 
 
-        # CROWDSALE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        elif operation == 'mintTokens':
-            return perform_exchange(ctx)
+        # KYC ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         elif operation == 'crowdsale_register':
             return kyc_register(ctx, args)
 
+        elif operation == 'crowdsale_unregister':
+            return kyc_unregister(ctx, args)
+
         elif operation == 'crowdsale_status':
             return kyc_status(ctx, args)
+
+
+        # CROWDSALE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        elif operation == 'mintTokens':
+            return perform_exchange(ctx)
 
         elif operation == 'crowdsale_available':
             return crowdsale_available_amount(ctx)

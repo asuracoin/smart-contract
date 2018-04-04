@@ -6,75 +6,26 @@ from boa.builtins import concat
 from asa.token import *
 from asa.txio import get_asset_attachments
 
-# OnInvalidKYCAddress = RegisterAction('invalid_registration', 'address')
-# OnKYCRegister = RegisterAction('kyc_registration', 'address')
-# OnKYCUnregister = RegisterAction('kyc_unregistration', 'address')
 # OnTransfer = RegisterAction('transfer', 'addr_from', 'addr_to', 'amount')
 # OnRefund = RegisterAction('refund', 'addr_to', 'amount')
 
-TOKENS_PER_NEO = 500 * 100_000_000
 
-# maximum amount you can mint in the limited round ( 500 neo/person * 40 Tokens/NEO * 10^8 )
-MAX_EXCHANGE_LIMITED_ROUND = 500 * 500 * 100_000_000
-
-# when to start the crowdsale
-# BLOCK_SALE_START = 10
-
-# when to end the initial limited round
-# LIMITED_ROUND_END = 999_999_999_999
-
-KYC_KEY = b'kyc_ok'
-
-LIMITED_ROUND_KEY = b'r1'
-
-def kyc_register(ctx, args):
-
-    ok_count = 0
-
-    if CheckWitness(TOKEN_OWNER):
-
-        for address in args:
-
-            if len(address) == 20:
-
-                kyc_storage_key = concat(KYC_KEY, address)
-                Put(ctx, kyc_storage_key, True)
-
-                # OnKYCRegister(address)
-                ok_count += 1
-
-    return ok_count
-
-def kyc_unregister(ctx, args):
-
-    ok_count = 0
-
-    if CheckWitness(TOKEN_OWNER):
-
-        for address in args:
-
-            if len(address) == 20:
-
-                kyc_storage_key = concat(KYC_KEY, address)
-                Delete(ctx, kyc_storage_key)
-
-                # OnKYCRUnregister(address)
-                ok_count -= 1
-
-    return ok_count
+PRESALE_LIMIT_ROUND_KEY = b'PRESALE'
+PRESALE_START_TIMESTAMP = 1525824000     # GMT - May 9, 2018 12:00:00 AM
+PRESALE_LIMIT_END_TIMESTAMP = 1525910400 # GMT - May 10, 2018 12:00:00 AM
+PRESALE_END_TIMESTAMP = 1526860800       # GMT - May 21, 2018 12:00:00 AM
+PRESALE_LIMIT_ROUND_NEO_MIN = 10 # NEO
+PRESALE_LIMIT_ROUND_NEO_MAX = 50 # NEO
+PRESALE_TOKENS_PER_NEO = 600 * 100_000_000 # 600 Tokens/NEO * 10^8 (500*1.2=600)
 
 
-def kyc_status(ctx, args):
-
-    if len(args) > 0:
-        return get_kyc_status(ctx, args[0])
-
-    return False
-
-
-def get_kyc_status(ctx, address):
-
-    return Get(ctx, concat(KYC_KEY, address))
+CROWDSALE_LIMIT_ROUND_KEY = b'CROWDSALE'
+CROWDSALE_START_TIMESTAMP = 1528070400     # GMT - June 4, 2018 12:00:00 AM
+CROWDSALE_LIMIT_END_TIMESTAMP = 1528156800 # GMT - June 5, 2018 12:00:00 AM
+CROWDSALE_END_TIMESTAMP = 1529020800       # GMT - June 15, 2018 12:00:00 AM
+CROWDSALE_LIMIT_ROUND_NEO_MIN = 10 # NEO
+CROWDSALE_LIMIT_ROUND_NEO_MAX = 50 # NEO
+CROWDSALE_TOKENS_PER_NEO = 500 * 100_000_000 # 600 Tokens/NEO * 10^8 (500*1.2=600)
 
 
 def perform_exchange(ctx):
@@ -131,9 +82,7 @@ def can_exchange(ctx, attachments, verify_only):
     # caluclate the amount requested
     amount_requested = attachments[2] * TOKENS_PER_NEO / 100000000
 
-    exchange_ok = calculate_can_exchange(ctx, amount_requested, attachments[1], verify_only)
-
-    return exchange_ok
+    return calculate_can_exchange(ctx, amount_requested, attachments[1], verify_only)
 
 
 def calculate_can_exchange(ctx, amount, address, verify_only):
