@@ -1,11 +1,11 @@
 from boa.interop.Neo.Runtime import GetTrigger, CheckWitness
 from boa.interop.Neo.TriggerType import Application, Verification
-from boa.interop.Neo.Storage import *
+from boa.interop.Neo.Storage import GetContext
 from asa.txio import get_asset_attachments
-from asa.token import TOKEN_OWNER,
 from asa.nep5 import NEP5_METHODS, handle_nep51
-from asa.sale import *
-from asa.kyc import *
+from asa.token import TOKEN_OWNER, deploy, get_circulation
+from asa.kyc import kyc_register, kyc_unregister, kyc_status
+from asa.sale import perform_exchange, crowdsale_available_amount
 
 ctx = GetContext()
 

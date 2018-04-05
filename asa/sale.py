@@ -31,6 +31,8 @@ CROWDSALE_TOKENS_PER_NEO = 500 * 100_000_000 # 600 Tokens/NEO * 10^8 (500*1.2=60
 def perform_exchange(ctx):
 
     attachments = get_asset_attachments()  # [receiver, sender, neo, gas]
+    address = attachments[1]
+    neo_amount = attachments[2]
 
     # this looks up whether the exchange can proceed
     exchange_ok = can_exchange(ctx, attachments, False)
@@ -40,31 +42,21 @@ def perform_exchange(ctx):
         # block before the total amount is reached.  An amount of TX will get through
         # the verification phase because the total amount cannot be updated during that phase
         # because of this, there should be a process in place to manually refund tokens
-        if attachments[2] > 0:
-            OnRefund(attachments[1], attachments[2])
+        if neo_amount > 0:
+            OnRefund(address, neo_amount)
         # if you want to exchange gas instead of neo, use this
         # if attachments.gas_attached > 0:
         #    OnRefund(attachments.sender_addr, attachments.gas_attached)
         return False
 
-    # lookup the current balance of the address
-    current_balance = Get(ctx, attachments[1])
-
     # calculate the amount of tokens the attached neo will earn
-    exchanged_tokens = attachments[2] * TOKENS_PER_NEO / 100000000
+    exchanged_tokens = neo_amount * TOKENS_PER_NEO / 100000000
 
-    # add it to the the exchanged tokens and persist in storage
-    new_total = exchanged_tokens + current_balance
-    Put(ctx, attachments[1], new_total)
-
-    # update the in circulation amount
-    result = add_to_circulation(ctx, exchanged_tokens)
-
+    didMint = mint_tokens(ctx, address, exchanged_tokens)
     # dispatch transfer event
     # OnTransfer(attachments[0], attachments[1], exchanged_tokens)
 
-    return True
-
+    return didMint
 
 def can_exchange(ctx, attachments, verify_only):
 
