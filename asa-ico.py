@@ -1,7 +1,7 @@
-from boa.interop.Neo.Runtime import GetTrigger, CheckWitness
+from boa.interop.Neo.Runtime import GetTrigger, CheckWitness, Notify
 from boa.interop.Neo.TriggerType import Application, Verification
 from boa.interop.Neo.Storage import GetContext
-from asa.txio import get_asset_attachments
+from asa.utils.txio import get_asset_attachments
 from asa.nep5 import NEP5_METHODS, handle_nep51
 from asa.token import TOKEN_OWNER, deploy, get_circulation
 from asa.kyc import kyc_register, kyc_unregister, kyc_status
@@ -18,7 +18,7 @@ def Main(operation, args):
         if CheckWitness(TOKEN_OWNER):
             return True
 
-        return can_exchange(ctx, get_asset_attachments(), True)
+        return calculate_exchange_amount(ctx, get_asset_attachments(), True) > 0
 
     elif trigger == Application():
 
@@ -34,6 +34,9 @@ def Main(operation, args):
 
         elif operation == 'circulation':
             return get_circulation(ctx)
+
+        elif operation == 'transfer_team_tokens':
+            return transfer_team_tokens(ctx)
 
 
         # KYC ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -52,6 +55,9 @@ def Main(operation, args):
 
         elif operation == 'mintTokens':
             return perform_exchange(ctx)
+
+        elif operation == 'limitsale_available':
+            return limitsale_available_amount(ctx)
 
         elif operation == 'crowdsale_available':
             return crowdsale_available_amount(ctx)

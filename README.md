@@ -6,6 +6,6 @@ This is the smart contract code for the Asura World token Asura Coin (ASA)
 - Total Supply: 1,000,000,000
 - Decimals: 8
 - Initial Amount: 250,000,000
-- Presale: 300,000,000
+- Limitsale: 300,000,000 @ 20% bonus
 - Crowdsale: 350,000,000
 - Team lockup: 100,000,000

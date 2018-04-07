@@ -4,29 +4,40 @@ from boa.interop.Neo.Action import RegisterAction
 from boa.interop.Neo.Storage import Get, Put
 from boa.builtins import concat
 from asa.token import *
-from asa.txio import get_asset_attachments
+from asa.utils.txio import get_asset_attachments
+from asa.utils.time import get_now
 
-# OnTransfer = RegisterAction('transfer', 'addr_from', 'addr_to', 'amount')
-# OnRefund = RegisterAction('refund', 'addr_to', 'amount')
-
-
-PRESALE_LIMIT_ROUND_KEY = b'PRESALE'
-PRESALE_START_TIMESTAMP = 1525824000     # GMT - May 9, 2018 12:00:00 AM
-PRESALE_LIMIT_END_TIMESTAMP = 1525910400 # GMT - May 10, 2018 12:00:00 AM
-PRESALE_END_TIMESTAMP = 1526860800       # GMT - May 21, 2018 12:00:00 AM
-PRESALE_LIMIT_ROUND_NEO_MIN = 10 # NEO
-PRESALE_LIMIT_ROUND_NEO_MAX = 50 # NEO
-PRESALE_TOKENS_PER_NEO = 600 * 100_000_000 # 600 Tokens/NEO * 10^8 (500*1.2=600)
+OnTransfer = RegisterAction('transfer', 'addr_from', 'addr_to', 'amount')
+OnRefund = RegisterAction('refund', 'addr_to', 'amount')
 
 
-CROWDSALE_LIMIT_ROUND_KEY = b'CROWDSALE'
-CROWDSALE_START_TIMESTAMP = 1528070400     # GMT - June 4, 2018 12:00:00 AM
-CROWDSALE_LIMIT_END_TIMESTAMP = 1528156800 # GMT - June 5, 2018 12:00:00 AM
-CROWDSALE_END_TIMESTAMP = 1529020800       # GMT - June 15, 2018 12:00:00 AM
-CROWDSALE_LIMIT_ROUND_NEO_MIN = 10 # NEO
-CROWDSALE_LIMIT_ROUND_NEO_MAX = 50 # NEO
-CROWDSALE_TOKENS_PER_NEO = 500 * 100_000_000 # 600 Tokens/NEO * 10^8 (500*1.2=600)
+LIMITSALE_ROUND_KEY = b'limit_sale'
 
+LIMITSALE_START_TIMESTAMP = 1526860800  # GMT - May 21, 2018 12:00:00 AM
+LIMITSALE_END_TIMESTAMP = 1526947200    # GMT - May 22, 2018 12:00:00 AM
+CROWDSALE_END_TIMESTAMP = 1529020800    # GMT - June 15, 2018 12:00:00 AM
+
+LIMITSALE_NEO_MIN = 10 # NEO
+LIMITSALE_NEO_MAX = 50 # NEO
+
+LIMITSALE_TOKENS_PER_NEO = 600 * 100_000_000 # 600 Tokens/NEO * 10^8 (500*1.2=600)
+CROWDSALE_TOKENS_PER_NEO = 500 * 100_000_000 # 500 Tokens/NEO * 10^8
+
+def limitsale_available_amount(ctx):
+
+    if LIMITSALE_END_TIMESTAMP < get_now():
+        return 0
+
+    max_circulation_limit_round = TOKEN_INITIAL_AMOUNT + TOKEN_LIMITSALE_MAX
+    in_circ = Get(ctx, TOKEN_CIRC_KEY)
+
+    return max_circulation_limit_round - in_circ
+
+def crowdsale_available_amount(ctx):
+
+    in_circ = Get(ctx, TOKEN_CIRC_KEY)
+
+    return TOKEN_TOTAL_SUPPLY - TOKEN_TEAM_AMOUNT - in_circ
 
 def perform_exchange(ctx):
 
@@ -35,9 +46,9 @@ def perform_exchange(ctx):
     neo_amount = attachments[2]
 
     # this looks up whether the exchange can proceed
-    exchange_ok = can_exchange(ctx, attachments, False)
+    exchange_amount = calculate_exchange_amount(ctx, attachments, False)
 
-    if not exchange_ok:
+    if exchange_amount == 0:
         # This should only happen in the case that there are a lot of TX on the final
         # block before the total amount is reached.  An amount of TX will get through
         # the verification phase because the total amount cannot be updated during that phase
@@ -49,70 +60,75 @@ def perform_exchange(ctx):
         #    OnRefund(attachments.sender_addr, attachments.gas_attached)
         return False
 
-    # calculate the amount of tokens the attached neo will earn
-    exchanged_tokens = neo_amount * TOKENS_PER_NEO / 100000000
-
-    didMint = mint_tokens(ctx, address, exchanged_tokens)
+    didMint = mint_tokens(ctx, address, exchange_amount)
     # dispatch transfer event
     # OnTransfer(attachments[0], attachments[1], exchanged_tokens)
 
     return didMint
 
-def can_exchange(ctx, attachments, verify_only):
 
-    # if you are accepting gas, use this
+def calculate_exchange_amount(ctx, attachments, verify_only):
+
+    address = attachments[1]
+    neo_amount = attachments[2]
+
     if attachments[2] == 0:
        print("no neo attached")
-       return False
+       return 0
 
     # the following looks up whether an address has been
     # registered with the contract for KYC regulations
     # this is not required for operation of the contract
-    if not get_kyc_status(ctx, attachments[1]):
-        return False
+    if not get_kyc_status(ctx, address):
+        return 0
 
-    # caluclate the amount requested
-    amount_requested = attachments[2] * TOKENS_PER_NEO / 100000000
+    current_timestamp = get_now()
 
-    return calculate_can_exchange(ctx, amount_requested, attachments[1], verify_only)
-
-
-def calculate_can_exchange(ctx, amount, address, verify_only):
-
-    height = GetHeight()
+    if current_timestamp < LIMITSALE_START_TIMESTAMP:
+        print('token sale has not started yet')
+        return 0
 
     current_in_circulation = Get(ctx, TOKEN_CIRC_KEY)
 
-    new_amount = current_in_circulation + amount
+    if current_timestamp < LIMITSALE_END_TIMESTAMP:
+        return calculate_limitsale_amount(ctx, address, neo_amount, current_in_circulation)
 
-    if new_amount > TOKEN_TOTAL_SUPPLY:
-        return False
+    if current_timestamp < CROWDSALE_END_TIMESTAMP:
+        return calculate_crowdsale_amount(neo_amount, current_in_circulation)
 
-    # if we are in free round, any amount
-    if height > LIMITED_ROUND_END:
-        return True
 
-    # check amount in limited round
-    if amount <= MAX_EXCHANGE_LIMITED_ROUND:
+    return 0
 
-        # check if they have already exchanged in the limited round
-        r1key = concat(address, LIMITED_ROUND_KEY)
-        amount_exchanged = Get(ctx, r1key)
+def calculate_limitsale_amount(ctx, address, neo_amount, current_in_circulation):
+    print('in limited round of crowd sale')
+    limit_round_key = concat(address, LIMITSALE_ROUND_KEY)
+    amount_exchanged = Get(ctx, limit_round_key)
 
-        # updated to allow users to exchange as many times
-        # as they want in the limit round up to their maximum
-        new_exchanged_amount = amount + amount_exchanged
+    exchange_amount = neo_amount * LIMITSALE_TOKENS_PER_NEO
+    max_circulation_limit_round = TOKEN_INITIAL_AMOUNT + TOKEN_LIMITSALE_MAX
+    new_circulation = current_in_circulation + exchange_amount
+    isBelowMaxCirculation = new_circulation < max_circulation_limit_round
 
-        # if not, then save the exchange for limited round
-        if new_exchanged_amount <= MAX_EXCHANGE_LIMITED_ROUND:
-            # note that this method can be invoked during the Verification trigger, so we have the
-            # verify_only param to avoid the Storage.Put during the read-only Verification trigger.
-            # this works around a "method Neo.Storage.Put not found in ->" error in InteropService.py
-            # since Verification is read-only and thus uses a StateReader, not a StateMachine
-            if not verify_only:
-                Put(ctx, r1key, new_exchanged_amount)
-            return True
+    new_exchanged_neo_amount = neo_amount + amount_exchanged
+    isAboveMinExchange = LIMITSALE_NEO_MIN < new_exchanged_neo_amount
+    isBelowMaxExchange = new_exchanged_neo_amount < LIMITSALE_NEO_MAX
 
-        return False
+    if isBelowMaxCirculation and isAboveMinExchange and isBelowMaxExchange:
+        if not verify_only:
+            Put(ctx, limit_round_key, new_exchanged_neo_amount)
+        return exchange_amount
 
-    return False
+    return 0
+
+
+def calculate_crowdsale_amount(neo_amount, current_in_circulation):
+    print('in open round of crowd sale')
+    exchange_amount = neo_amount * CROWDSALE_TOKENS_PER_NEO
+    max_circulation_crowdsale = TOKEN_TOTAL_SUPPLY - TOKEN_TEAM_AMOUNT
+    new_circulation = current_in_circulation + exchange_amount
+    isBelowMaxCirculation = new_circulation < max_circulation_crowdsale
+
+    if isBelowMaxCirculation:
+        return exchange_amount
+
+    return 0

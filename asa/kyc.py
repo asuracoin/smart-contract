@@ -3,7 +3,7 @@ from boa.interop.Neo.Action import RegisterAction
 from boa.interop.Neo.Storage import Get, Put, Delete
 from boa.builtins import concat
 from asa.token import TOKEN_OWNER
-from asa.txio import get_asset_attachments
+from asa.utils.txio import get_asset_attachments
 
 OnInvalidKYCAddress = RegisterAction('invalid_registration', 'address')
 OnKYCRegister = RegisterAction('kyc_registration', 'address')
@@ -34,8 +34,8 @@ def kyc_unregister(ctx, args):
         for address in args:
             if len(address) == 20:
                 Delete(ctx, concat(KYC_KEY, address))
-                OnKYCRUnregister(address)
-                ok_count -= 1
+                OnKYCUnregister(address)
+                ok_count += 1
 
     return ok_count
 
