@@ -24,6 +24,13 @@ LIMITSALE_TOKENS_PER_NEO = 600 * 100_000_000 # 600 Tokens/NEO * 10^8 (500*1.2=60
 CROWDSALE_TOKENS_PER_NEO = 500 * 100_000_000 # 500 Tokens/NEO * 10^8
 
 def limitsale_available_amount(ctx):
+    """
+    Get remaining amount of tokens still available in limit round of crowdsale
+
+    :param ctx:GetContext() used to access contract storage
+
+    :return:int amount of tokens still available in limit round of crowdsale
+    """
 
     if LIMITSALE_END_TIMESTAMP < get_now():
         return 0
@@ -34,18 +41,32 @@ def limitsale_available_amount(ctx):
     return max_circulation_limit_round - in_circ
 
 def crowdsale_available_amount(ctx):
+    """
+    Get remaining amount of tokens still available in the crowdsale
+
+    :param ctx:GetContext() used to access contract storage
+
+    :return:int amount of tokens still available in the crowdsale
+    """
 
     in_circ = Get(ctx, TOKEN_CIRC_KEY)
 
     return TOKEN_TOTAL_SUPPLY - TOKEN_TEAM_AMOUNT - in_circ
 
 def perform_exchange(ctx):
+    """
+    Attempt to exchange attached NEO for tokens
 
-    attachments = get_asset_attachments()  # [receiver, sender, neo, gas]
+    :param ctx:GetContext() used to access contract storage
+
+    :return:bool Whether the exchange was successful
+    """
+
+    attachments = get_asset_attachments() # [receiver, sender, neo, gas]
     address = attachments[1]
     neo_amount = attachments[2]
 
-    # this looks up whether the exchange can proceed
+    # calculate the amount of tokens that can be exchanged
     exchange_amount = calculate_exchange_amount(ctx, attachments, False)
 
     if exchange_amount == 0:
@@ -55,19 +76,25 @@ def perform_exchange(ctx):
         # because of this, there should be a process in place to manually refund tokens
         if neo_amount > 0:
             OnRefund(address, neo_amount)
-        # if you want to exchange gas instead of neo, use this
-        # if attachments.gas_attached > 0:
-        #    OnRefund(attachments.sender_addr, attachments.gas_attached)
         return False
 
     didMint = mint_tokens(ctx, address, exchange_amount)
     # dispatch transfer event
-    # OnTransfer(attachments[0], attachments[1], exchanged_tokens)
+    OnTransfer(attachments[0], attachments[1], exchanged_tokens)
 
     return didMint
 
 
 def calculate_exchange_amount(ctx, attachments, verify_only):
+    """
+    Calculate the amount of tokens that can be exchanged
+
+    :param ctx:GetContext() used to access contract storage
+    :param attachments:list [receiver, sender, neo, gas]
+    :param verify_only:bool if this is the actual exchange, or just a verification
+
+    :return:int Amount of tokens to be exchanged
+    """
 
     address = attachments[1]
     neo_amount = attachments[2]
@@ -84,22 +111,37 @@ def calculate_exchange_amount(ctx, attachments, verify_only):
 
     current_timestamp = get_now()
 
+    # if the sale has not yet started no amount can be exchanged
     if current_timestamp < LIMITSALE_START_TIMESTAMP:
         print('token sale has not started yet')
         return 0
 
     current_in_circulation = Get(ctx, TOKEN_CIRC_KEY)
 
+    # if are still in the limit round of the crowdsale
+    # ensure only amount abides but limit round rules
     if current_timestamp < LIMITSALE_END_TIMESTAMP:
-        return calculate_limitsale_amount(ctx, address, neo_amount, current_in_circulation)
+        return calculate_limitsale_amount(ctx, address, neo_amount, current_in_circulation, verify_only)
 
+    # calculate amount if still in crowdsale timeline
     if current_timestamp < CROWDSALE_END_TIMESTAMP:
         return calculate_crowdsale_amount(neo_amount, current_in_circulation)
 
-
     return 0
 
-def calculate_limitsale_amount(ctx, address, neo_amount, current_in_circulation):
+def calculate_limitsale_amount(ctx, address, neo_amount, current_in_circulation, verify_only):
+    """
+    Calculate the amount of tokens that can be exchanged in limit round
+
+    :param ctx:GetContext() used to access contract storage
+    :param address: address to calculate amount for
+    :param neo_amount:int amount of neo attached for exchange
+    :param current_in_circulation:int amount tokens in circulation
+    :param verify_only:bool if this is the actual exchange, or just a verification
+
+    :return:int Amount of tokens to be exchanged
+    """
+
     print('in limited round of crowd sale')
     limit_round_key = concat(address, LIMITSALE_ROUND_KEY)
     amount_exchanged = Get(ctx, limit_round_key)
@@ -122,6 +164,15 @@ def calculate_limitsale_amount(ctx, address, neo_amount, current_in_circulation)
 
 
 def calculate_crowdsale_amount(neo_amount, current_in_circulation):
+    """
+    Calculate the amount of tokens that can be exchanged in general crowdsale
+
+    :param neo_amount:int amount of neo attached for exchange
+    :param current_in_circulation:int amount tokens in circulation
+
+    :return:int Amount of tokens to be exchanged
+    """
+
     print('in open round of crowd sale')
     exchange_amount = neo_amount * CROWDSALE_TOKENS_PER_NEO
     max_circulation_crowdsale = TOKEN_TOTAL_SUPPLY - TOKEN_TEAM_AMOUNT
