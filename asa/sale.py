@@ -10,18 +10,69 @@ from asa.utils.time import get_now
 OnTransfer = RegisterAction('transfer', 'addr_from', 'addr_to', 'amount')
 OnRefund = RegisterAction('refund', 'addr_to', 'amount')
 
+SALE_STATUS_KEY = b'sale_status'
 
-LIMITSALE_ROUND_KEY = b'limit_sale'
-
-LIMITSALE_START_TIMESTAMP = 1526860800  # GMT - May 21, 2018 12:00:00 AM
-LIMITSALE_END_TIMESTAMP = 1526947200    # GMT - May 22, 2018 12:00:00 AM
-CROWDSALE_END_TIMESTAMP = 1529020800    # GMT - June 15, 2018 12:00:00 AM
+LIMITSALE_ROUND = b'limit_sale'
+CROWDSALE_ROUND = b'crowd_sale'
+SALE_END = b'sale_end'
 
 LIMITSALE_NEO_MIN = 10 # NEO
 LIMITSALE_NEO_MAX = 50 # NEO
 
 LIMITSALE_TOKENS_PER_NEO = 600 * 100_000_000 # 600 Tokens/NEO * 10^8 (500*1.2=600)
 CROWDSALE_TOKENS_PER_NEO = 500 * 100_000_000 # 500 Tokens/NEO * 10^8
+
+def start_limit_sale(ctx):
+    """
+    Start the limit round of the token sale
+
+    :param ctx:GetContext() used to access contract storage
+
+    :return:bool Whether starting the round was successful
+    """
+
+    if CheckWitness(TOKEN_OWNER):
+        # start the limit sale if no sale started
+        if Get(ctx, SALE_STATUS_KEY) == b'':
+            Put(ctx, SALE_STATUS_KEY, LIMITSALE_ROUND)
+            return True
+
+    return False
+
+def start_crowd_sale(ctx):
+    """
+    Start the crowd round of the token sale
+
+    :param ctx:GetContext() used to access contract storage
+
+    :return:bool Whether starting the round was successful
+    """
+
+    if CheckWitness(TOKEN_OWNER):
+        # start the crowd sale if limit sale in progress
+        if Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND:
+            Put(ctx, SALE_STATUS_KEY, CROWDSALE_ROUND)
+            return True
+
+    return False
+
+def end_sale(ctx):
+    """
+    End the token sale, start clock on team tokens unlock
+
+    :param ctx:GetContext() used to access contract storage
+
+    :return:bool Whether starting the sale was successful
+    """
+
+    if CheckWitness(TOKEN_OWNER):
+        # end the crowd sale if in progress
+        if Get(ctx, SALE_STATUS_KEY) == CROWDSALE_ROUND:
+            Put(ctx, SALE_STATUS_KEY, SALE_END)
+            Put(ctx, TOKEN_TEAM_LOCKUP_START_KEY, get_now())
+            return True
+
+    return False
 
 def limitsale_available_amount(ctx):
     """
@@ -32,7 +83,7 @@ def limitsale_available_amount(ctx):
     :return:int amount of tokens still available in limit round of crowdsale
     """
 
-    if LIMITSALE_END_TIMESTAMP < get_now():
+    if Get(ctx, SALE_STATUS_KEY) != LIMITSALE_ROUND:
         return 0
 
     max_circulation_limit_round = TOKEN_INITIAL_AMOUNT + TOKEN_LIMITSALE_MAX
@@ -112,7 +163,7 @@ def calculate_exchange_amount(ctx, attachments, verify_only):
     current_timestamp = get_now()
 
     # if the sale has not yet started no amount can be exchanged
-    if current_timestamp < LIMITSALE_START_TIMESTAMP:
+    if Get(ctx, SALE_STATUS_KEY) == b'':
         print('token sale has not started yet')
         return 0
 
@@ -120,11 +171,11 @@ def calculate_exchange_amount(ctx, attachments, verify_only):
 
     # if are still in the limit round of the crowdsale
     # ensure only amount abides but limit round rules
-    if current_timestamp < LIMITSALE_END_TIMESTAMP:
+    if Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND:
         return calculate_limitsale_amount(ctx, address, neo_amount, current_in_circulation, verify_only)
 
     # calculate amount if still in crowdsale timeline
-    if current_timestamp < CROWDSALE_END_TIMESTAMP:
+    if Get(ctx, SALE_STATUS_KEY) == CROWDSALE_ROUND:
         return calculate_crowdsale_amount(neo_amount, current_in_circulation)
 
     return 0

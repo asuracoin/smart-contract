@@ -16,8 +16,9 @@ TOKEN_LIMITSALE_MAX = 300_000_000 * 100_000_000 # 300 million * 10^8
 # allocation for asura world team
 # to be locked for 12 months
 TOKEN_TEAM_AMOUNT = 100_000_000 * 100_000_000 # 100 million * 10^8
-TOKEN_TEAM_LOCKUP_END_TIMESTAMP = 1526860800 # GMT - May 21, 2019 12:00:00 AM
+TOKEN_TEAM_LOCKUP_PERIOD = 31536000 # 365 days
 TOKEN_TEAM_DISTRO_KEY = b'team_tokens'
+TOKEN_TEAM_LOCKUP_START_KEY =  b'team_tokens_lockup_start'
 
 # bounty program and airdrops
 # sent to owner wallet on contract deploy
@@ -116,8 +117,17 @@ def transfer_team_tokens(ctx, args):
         print('Must be owner to deploy')
         return False
 
+    team_lockup_start = Get(ctx, TOKEN_TEAM_LOCKUP_START_KEY)
+
+    # team tokens cant be transfered before lockup period has started
+    if team_lockup_start == b'':
+        print('Team token lockup period has not yet started')
+        return False
+
+    team_lockup_end = team_lockup_start + TOKEN_TEAM_LOCKUP_PERIOD
+
     # team tokens cant be transfered before lockup period is over
-    if get_now() < TOKEN_TEAM_LOCKUP_END_TIMESTAMP:
+    if get_now() < team_lockup_end:
         print('Team token lockup period has not yet ended')
         return False
 
