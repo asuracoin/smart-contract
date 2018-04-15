@@ -54,6 +54,9 @@ def Main(operation, args):
         elif operation == 'transfer_team_tokens':
             return transfer_team_tokens(ctx)
 
+        elif operation == 'transfer_growth_tokens':
+            return transfer_growth_tokens(ctx)
+
 
         # KYC ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -77,5 +80,15 @@ def Main(operation, args):
 
         elif operation == 'crowdsale_available':
             return crowdsale_available_amount(ctx)
+
+        elif operation == 'start_limit_sale':
+            return start_limit_sale(ctx)
+
+        elif operation == 'start_crowd_sale':
+            return start_crowd_sale(ctx)
+
+        elif operation == 'end_sale':
+            return end_sale(ctx)
+
 
     return False

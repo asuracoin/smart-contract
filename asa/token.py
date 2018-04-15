@@ -9,6 +9,7 @@ TOKEN_DECIMALS = 8
 TOKEN_OWNER = b'#\xba\'\x03\xc52c\xe8\xd6\xe5"\xdc2 39\xdc\xd8\xee\xe9'
 
 TOKEN_CIRC_KEY = b'in_circulation'
+TOKEN_LOCKUP_START_KEY =  b'token_lockup_start'
 
 TOKEN_TOTAL_SUPPLY = 1_000_000_000 * 100_000_000 # 1 billion * 10^8
 TOKEN_LIMITSALE_MAX = 300_000_000 * 100_000_000 # 300 million * 10^8
@@ -18,7 +19,8 @@ TOKEN_LIMITSALE_MAX = 300_000_000 * 100_000_000 # 300 million * 10^8
 TOKEN_TEAM_AMOUNT = 100_000_000 * 100_000_000 # 100 million * 10^8
 TOKEN_TEAM_LOCKUP_PERIOD = 31536000 # 365 days
 TOKEN_TEAM_DISTRO_KEY = b'team_tokens'
-TOKEN_TEAM_LOCKUP_START_KEY =  b'team_tokens_lockup_start'
+
+TOKEN_GROWTH_LOCKUP_PERIOD = 31536000 # 365 days
 
 # bounty program and airdrops
 # sent to owner wallet on contract deploy
@@ -57,7 +59,7 @@ def get_circulation(ctx):
 
     :param ctx:GetContext() used to access contract storage
 
-    :return: int The amount of tokens left for sale in the crowdsale
+    :return: int The amount of tokens in circulation
     """
 
     return Get(ctx, TOKEN_CIRC_KEY)
@@ -114,20 +116,20 @@ def transfer_team_tokens(ctx, args):
 
     # only the contract owner can transfer team tokens
     if not CheckWitness(TOKEN_OWNER):
-        print('Must be owner to deploy')
+        print('Must be owner to transfer team tokens')
         return False
 
-    team_lockup_start = Get(ctx, TOKEN_TEAM_LOCKUP_START_KEY)
+    lockup_start = Get(ctx, TOKEN_LOCKUP_START_KEY)
 
     # team tokens cant be transfered before lockup period has started
-    if team_lockup_start == b'':
+    if lockup_start == b'':
         print('Team token lockup period has not yet started')
         return False
 
-    team_lockup_end = team_lockup_start + TOKEN_TEAM_LOCKUP_PERIOD
+    lockup_end = lockup_start + TOKEN_TEAM_LOCKUP_PERIOD
 
     # team tokens cant be transfered before lockup period is over
-    if get_now() < team_lockup_end:
+    if get_now() < lockup_end:
         print('Team token lockup period has not yet ended')
         return False
 
@@ -159,6 +161,72 @@ def transfer_team_tokens(ctx, args):
 
     # update total amount of tokens distributed to team
     Put(ctx, TOKEN_TEAM_DISTRO_KEY, team_tokens_distributed)
+
+    # mint tokens into the team address
+    didMint = mint_tokens(ctx, address, amount)
+
+    return didMint
+
+def transfer_growth_tokens(ctx, args):
+    """
+    Transfer growth alloted tokens
+
+    :param ctx:GetContext() used to access contract storage
+    :param args:list address and amount to send tokens to
+
+    :return:bool Whether the operation was successful
+    """
+
+    # only the contract owner can transfer team tokens
+    if not CheckWitness(TOKEN_OWNER):
+        print('Must be owner to transfer growth tokens')
+        return False
+
+    lockup_start = Get(ctx, TOKEN_LOCKUP_START_KEY)
+
+    # growth tokens cant be transfered before lockup period has started
+    if lockup_start == b'':
+        print('Growth token lockup period has not yet started')
+        return False
+
+    lockup_end = lockup_start + TOKEN_TEAM_LOCKUP_PERIOD
+
+    # growth tokens cant be transfered before lockup period is over
+    if get_now() < lockup_end:
+        print('Growth token lockup period has not yet ended')
+        return False
+
+    if len(args) != 2:
+        print('Not correct amount of arguments, expected 2')
+        return False
+
+    # address to send tokens to
+    address = args[0]
+    # amount of tokens to send
+    amount = args[1]
+
+    if len(address) != 20:
+        print('Not a valid address length')
+        return False
+    if amount <= 0:
+        print('No tokens to transfer')
+        return False
+
+    # get amount of total tokens in circulation
+    in_circulation = get_circulation(ctx)
+
+    # get amount of team tokens already distributed
+    team_tokens_distributed = Get(ctx, TOKEN_TEAM_DISTRO_KEY)
+    team_tokens_remaining = TOKEN_TEAM_AMOUNT - team_tokens_distributed
+
+    # calculate remaining tokens available for growth fund
+    growth_tokens_remaining = TOKEN_TOTAL_SUPPLY - team_tokens_remaining - in_circulation
+
+    # check to make sure that the total amount of tokens distributed
+    # will not exceed the remaining growth tokens
+    if growth_tokens_remaining < amount:
+        print("can't exceed TOKEN_TOTAL_SUPPLY")
+        return False
 
     # mint tokens into the team address
     didMint = mint_tokens(ctx, address, amount)

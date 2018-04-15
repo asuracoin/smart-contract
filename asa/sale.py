@@ -69,7 +69,7 @@ def end_sale(ctx):
         # end the crowd sale if in progress
         if Get(ctx, SALE_STATUS_KEY) == CROWDSALE_ROUND:
             Put(ctx, SALE_STATUS_KEY, SALE_END)
-            Put(ctx, TOKEN_TEAM_LOCKUP_START_KEY, get_now())
+            Put(ctx, TOKEN_LOCKUP_START_KEY, get_now())
             return True
 
     return False
