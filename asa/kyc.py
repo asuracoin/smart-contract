@@ -5,9 +5,8 @@ from boa.builtins import concat
 from asa.token import TOKEN_OWNER
 from asa.utils.txio import get_asset_attachments
 
-OnInvalidKYCAddress = RegisterAction('invalid_registration', 'address')
-OnKYCRegister = RegisterAction('kyc_registration', 'address')
-OnKYCUnregister = RegisterAction('kyc_unregistration', 'address')
+OnKYCRegister = RegisterAction('kycRegister', 'address')
+OnKycDeregister = RegisterAction('kycDeregister', 'address')
 
 KYC_KEY = b'kyc_ok'
 
@@ -33,13 +32,13 @@ def kyc_register(ctx, args):
     return ok_count
 
 
-def kyc_unregister(ctx, args):
+def kyc_deregister(ctx, args):
     """
-    Unregister a list of addresses from KYC
+    Deregister a list of addresses from KYC
 
     :param ctx:GetContext() used to access contract storage
-    :param args:list a list of addresses to unregister
-    :return:int The number of addresses unregistered from KYC
+    :param args:list a list of addresses to deregister
+    :return:int The number of addresses deregistered from KYC
     """
 
     ok_count = 0
@@ -49,7 +48,7 @@ def kyc_unregister(ctx, args):
         for address in args:
             if len(address) == 20:
                 Delete(ctx, concat(KYC_KEY, address))
-                OnKYCUnregister(address)
+                OnKycDeregister(address)
                 ok_count += 1
 
     return ok_count

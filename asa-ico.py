@@ -6,6 +6,7 @@ from asa.nep5 import NEP5_METHODS, handle_nep51
 from asa.token import TOKEN_OWNER, deploy, get_circulation
 from asa.kyc import kyc_register, kyc_unregister, kyc_status
 from asa.sale import perform_exchange, crowdsale_available_amount
+from asa.saleAdmin import *
 
 ctx = GetContext()
 
@@ -51,22 +52,22 @@ def Main(operation, args):
         elif operation == 'circulation':
             return get_circulation(ctx)
 
-        elif operation == 'transfer_team_tokens':
+        elif operation == 'transferTeamTokens':
             return transfer_team_tokens(ctx)
 
-        elif operation == 'transfer_growth_tokens':
+        elif operation == 'transferGrowthTokens':
             return transfer_growth_tokens(ctx)
 
 
         # KYC ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-        elif operation == 'crowdsale_register':
+        elif operation == 'kycRegister':
             return kyc_register(ctx, args)
 
-        elif operation == 'crowdsale_unregister':
-            return kyc_unregister(ctx, args)
+        elif operation == 'kycDeregister':
+            return kyc_deregister(ctx, args)
 
-        elif operation == 'crowdsale_status':
+        elif operation == 'kycStatus':
             return kyc_status(ctx, args)
 
 
@@ -75,19 +76,28 @@ def Main(operation, args):
         elif operation == 'mintTokens':
             return perform_exchange(ctx)
 
-        elif operation == 'limitsale_available':
+        elif operation == 'limitsaleRemaining':
             return limitsale_available_amount(ctx)
 
-        elif operation == 'crowdsale_available':
+        elif operation == 'saleRemaining':
             return crowdsale_available_amount(ctx)
 
-        elif operation == 'start_limit_sale':
+        elif operation == 'saleStatus':
+            return crowdsale_status(ctx)
+
+        elif operation == 'saleDetails':
+            return crowdsale_details(ctx)
+
+
+        # SALE ADMIN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        elif operation == 'startLimitSale':
             return start_limit_sale(ctx)
 
-        elif operation == 'start_crowd_sale':
+        elif operation == 'startCrowdSale':
             return start_crowd_sale(ctx)
 
-        elif operation == 'end_sale':
+        elif operation == 'endSale':
             return end_sale(ctx)
 
 

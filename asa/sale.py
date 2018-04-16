@@ -7,7 +7,7 @@ from asa.token import *
 from asa.utils.txio import get_asset_attachments
 from asa.utils.time import get_now
 
-OnTransfer = RegisterAction('transfer', 'addr_from', 'addr_to', 'amount')
+OnMintTokens = RegisterAction('mintTokens', 'addr_from', 'addr_to', 'amount')
 OnRefund = RegisterAction('refund', 'addr_to', 'amount')
 
 SALE_STATUS_KEY = b'sale_status'
@@ -22,57 +22,33 @@ LIMITSALE_NEO_MAX = 50 # NEO
 LIMITSALE_TOKENS_PER_NEO = 600 * 100_000_000 # 600 Tokens/NEO * 10^8 (500*1.2=600)
 CROWDSALE_TOKENS_PER_NEO = 500 * 100_000_000 # 500 Tokens/NEO * 10^8
 
-def start_limit_sale(ctx):
-    """
-    Start the limit round of the token sale
+SALE_NOT_STARTED_DETAILS = 'Token sale has not yet started. Please see asuracoin.io for more details.'
+LIMITSALE_DETAILS = 'Limit Round: 600 ASA/NEO, 10 NEO minumum, 50 NEO maximum'
+SALE_DETAILS = 'Open Round: 500 ASA/NEO'
+SALE_ENDED_DETAILS = 'Token sale has ended'
 
-    :param ctx:GetContext() used to access contract storage
+def crowdsale_status(ctx):
 
-    :return:bool Whether starting the round was successful
-    """
+    isLimitsale = Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND
+    isCrowdsale = Get(ctx, SALE_STATUS_KEY) == CROWDSALE_ROUND
 
-    if CheckWitness(TOKEN_OWNER):
-        # start the limit sale if no sale started
-        if Get(ctx, SALE_STATUS_KEY) == b'':
-            Put(ctx, SALE_STATUS_KEY, LIMITSALE_ROUND)
-            return True
+    if isLimitsale or isCrowdsale:
+        return True
 
     return False
 
-def start_crowd_sale(ctx):
-    """
-    Start the crowd round of the token sale
+def crowdsale_details(ctx):
 
-    :param ctx:GetContext() used to access contract storage
+    if Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND:
+        return LIMITSALE_DETAILS
 
-    :return:bool Whether starting the round was successful
-    """
+    if Get(ctx, SALE_STATUS_KEY) == CROWDSALE_ROUND:
+        return SALE_DETAILS
 
-    if CheckWitness(TOKEN_OWNER):
-        # start the crowd sale if limit sale in progress
-        if Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND:
-            Put(ctx, SALE_STATUS_KEY, CROWDSALE_ROUND)
-            return True
+    if Get(ctx, SALE_STATUS_KEY) == SALE_END:
+        return SALE_ENDED_DETAILS
 
-    return False
-
-def end_sale(ctx):
-    """
-    End the token sale, start clock on team tokens unlock
-
-    :param ctx:GetContext() used to access contract storage
-
-    :return:bool Whether starting the sale was successful
-    """
-
-    if CheckWitness(TOKEN_OWNER):
-        # end the crowd sale if in progress
-        if Get(ctx, SALE_STATUS_KEY) == CROWDSALE_ROUND:
-            Put(ctx, SALE_STATUS_KEY, SALE_END)
-            Put(ctx, TOKEN_LOCKUP_START_KEY, get_now())
-            return True
-
-    return False
+    return SALE_NOT_STARTED_DETAILS
 
 def limitsale_available_amount(ctx):
     """
@@ -99,6 +75,12 @@ def crowdsale_available_amount(ctx):
 
     :return:int amount of tokens still available in the crowdsale
     """
+
+    isLimitsale = Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND
+    isCrowdsale = Get(ctx, SALE_STATUS_KEY) == CROWDSALE_ROUND
+
+    if not isLimitsale and not isCrowdsale:
+        return 0
 
     in_circ = Get(ctx, TOKEN_CIRC_KEY)
 
@@ -130,8 +112,9 @@ def perform_exchange(ctx):
         return False
 
     didMint = mint_tokens(ctx, address, exchange_amount)
-    # dispatch transfer event
-    OnTransfer(attachments[0], attachments[1], exchanged_tokens)
+    # dispatch mintTokens event
+    if didMint:
+        OnMintTokens(attachments[0], attachments[1], exchanged_tokens)
 
     return didMint
 
