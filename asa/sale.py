@@ -28,6 +28,13 @@ SALE_DETAILS = 'Open Round: 500 ASA/NEO'
 SALE_ENDED_DETAILS = 'Token sale has ended'
 
 def crowdsale_status(ctx):
+    """
+    Get the status of the tokensale
+
+    :param ctx:GetContext() used to access contract storage
+
+    :return:bool whether or not the sale is active
+    """
 
     isLimitsale = Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND
     isCrowdsale = Get(ctx, SALE_STATUS_KEY) == CROWDSALE_ROUND
@@ -38,6 +45,13 @@ def crowdsale_status(ctx):
     return False
 
 def crowdsale_details(ctx):
+    """
+    Get details about the crowdsale status
+
+    :param ctx:GetContext() used to access contract storage
+
+    :return:string details about the crowdsale status, specific to round
+    """
 
     if Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND:
         return LIMITSALE_DETAILS
