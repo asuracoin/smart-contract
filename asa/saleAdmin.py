@@ -21,6 +21,23 @@ def start_limit_sale(ctx):
 
     return False
 
+def start_bonus_crowd_sale(ctx):
+    """
+    Start the bonus crowd round of the token sale
+
+    :param ctx:GetContext() used to access contract storage
+
+    :return:bool Whether starting the round was successful
+    """
+
+    if CheckWitness(TOKEN_OWNER):
+        # start the bonus crowd sale if limit sale in progress
+        if Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND:
+            Put(ctx, SALE_STATUS_KEY, CROWDSALE_BONUS_ROUND)
+            return True
+
+    return False
+
 def start_crowd_sale(ctx):
     """
     Start the crowd round of the token sale
@@ -32,7 +49,7 @@ def start_crowd_sale(ctx):
 
     if CheckWitness(TOKEN_OWNER):
         # start the crowd sale if limit sale in progress
-        if Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND:
+        if Get(ctx, SALE_STATUS_KEY) == CROWDSALE_BONUS_ROUND:
             Put(ctx, SALE_STATUS_KEY, CROWDSALE_ROUND)
             return True
 

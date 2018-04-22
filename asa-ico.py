@@ -94,6 +94,9 @@ def Main(operation, args):
         elif operation == 'startLimitSale':
             return start_limit_sale(ctx)
 
+        elif operation == 'startBonusCrowdSale':
+            return start_bonus_crowd_sale(ctx)
+
         elif operation == 'startCrowdSale':
             return start_crowd_sale(ctx)
 

@@ -13,18 +13,25 @@ OnRefund = RegisterAction('refund', 'addr_to', 'amount')
 SALE_STATUS_KEY = b'sale_status'
 
 LIMITSALE_ROUND = b'limit_sale'
+CROWDSALE_BONUS_ROUND = b'crowd_sale_bonus'
 CROWDSALE_ROUND = b'crowd_sale'
 SALE_END = b'sale_end'
 
-LIMITSALE_NEO_MIN = 10 # NEO
+LIMITSALE_NEO_MIN = 1 # NEO
 LIMITSALE_NEO_MAX = 50 # NEO
 
+CROWDSALE_NEO_MIN = 1 # NEO
+CROWDSALE_NEO_MAX = 500 # NEO
+
 LIMITSALE_TOKENS_PER_NEO = 600 * 100_000_000 # 600 Tokens/NEO * 10^8 (500*1.2=600)
+CROWDSALE_BONUS_ROUND_TOKENS_PER_NEO = 575 * 100_000_000 # 575 Tokens/NEO * 10^8 (500*1.15=575)
+CROWDSALE_LARGE_CONTRIBUTION_TOKENS_PER_NEO = 550 * 100_000_000 # 550 Tokens/NEO * 10^8 (500*1.1=550)
 CROWDSALE_TOKENS_PER_NEO = 500 * 100_000_000 # 500 Tokens/NEO * 10^8
 
 SALE_NOT_STARTED_DETAILS = 'Token sale has not yet started. Please see asuracoin.io for more details.'
-LIMITSALE_DETAILS = 'Limit Round: 600 ASA/NEO, 10 NEO minumum, 50 NEO maximum'
-SALE_DETAILS = 'Open Round: 500 ASA/NEO'
+LIMITSALE_DETAILS = 'Limit Round: 600 ASA/NEO, 1 NEO minumum, 50 NEO maximum'
+BONUS_SALE_DETAILS = 'Crowdsale Bonus Round: 575 ASA/NEO, 1 NEO minumum, 500 NEO maximum'
+SALE_DETAILS = 'Open Round: 500 ASA/NEO, 550 ASA/NEO is single contribution of 100 NEO or more, 500 NEO maximum'
 SALE_ENDED_DETAILS = 'Token sale has ended'
 
 def crowdsale_status(ctx):
@@ -37,9 +44,10 @@ def crowdsale_status(ctx):
     """
 
     isLimitsale = Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND
+    isCrowdsaleBonus = Get(ctx, SALE_STATUS_KEY) == CROWDSALE_BONUS_ROUND
     isCrowdsale = Get(ctx, SALE_STATUS_KEY) == CROWDSALE_ROUND
 
-    if isLimitsale or isCrowdsale:
+    if isLimitsale or isCrowdsaleBonus or isCrowdsale:
         return True
 
     return False
@@ -55,6 +63,9 @@ def crowdsale_details(ctx):
 
     if Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND:
         return LIMITSALE_DETAILS
+
+    if Get(ctx, SALE_STATUS_KEY) == CROWDSALE_BONUS_ROUND:
+        return BONUS_SALE_DETAILS
 
     if Get(ctx, SALE_STATUS_KEY) == CROWDSALE_ROUND:
         return SALE_DETAILS
@@ -91,9 +102,10 @@ def crowdsale_available_amount(ctx):
     """
 
     isLimitsale = Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND
+    isCrowdsaleBonus = Get(ctx, SALE_STATUS_KEY) == CROWDSALE_BONUS_ROUND
     isCrowdsale = Get(ctx, SALE_STATUS_KEY) == CROWDSALE_ROUND
 
-    if not isLimitsale and not isCrowdsale:
+    if not isLimitsale and not isCrowdsaleBonus and not isCrowdsale:
         return 0
 
     in_circ = Get(ctx, TOKEN_CIRC_KEY)
@@ -171,9 +183,12 @@ def calculate_exchange_amount(ctx, attachments, verify_only):
     if Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND:
         return calculate_limitsale_amount(ctx, address, neo_amount, current_in_circulation, verify_only)
 
+    if Get(ctx, SALE_STATUS_KEY) == CROWDSALE_BONUS_ROUND:
+        return calculate_crowdsale_bonus_round_amount(ctx, address, neo_amount, current_in_circulation, verify_only)
+
     # calculate amount if still in crowdsale timeline
     if Get(ctx, SALE_STATUS_KEY) == CROWDSALE_ROUND:
-        return calculate_crowdsale_amount(neo_amount, current_in_circulation)
+        return calculate_crowdsale_amount(ctx, address, neo_amount, current_in_circulation, verify_only)
 
     return 0
 
@@ -190,8 +205,8 @@ def calculate_limitsale_amount(ctx, address, neo_amount, current_in_circulation,
     :return:int Amount of tokens to be exchanged
     """
 
-    print('in limited round of crowd sale')
-    limit_round_key = concat(address, LIMITSALE_ROUND_KEY)
+    print('in limited round of token sale')
+    limit_round_key = concat(LIMITSALE_ROUND, address)
     amount_exchanged = Get(ctx, limit_round_key)
 
     exchange_amount = neo_amount * LIMITSALE_TOKENS_PER_NEO
@@ -210,24 +225,73 @@ def calculate_limitsale_amount(ctx, address, neo_amount, current_in_circulation,
 
     return 0
 
-
-def calculate_crowdsale_amount(neo_amount, current_in_circulation):
+def calculate_crowdsale_bonus_round_amount(ctx, address, neo_amount, current_in_circulation, verify_only):
     """
-    Calculate the amount of tokens that can be exchanged in general crowdsale
+    Calculate the amount of tokens that can be exchanged in bonus round of crowdsale
 
+    :param ctx:GetContext() used to access contract storage
+    :param address: address to calculate amount for
     :param neo_amount:int amount of neo attached for exchange
     :param current_in_circulation:int amount tokens in circulation
+    :param verify_only:bool if this is the actual exchange, or just a verification
 
     :return:int Amount of tokens to be exchanged
     """
 
-    print('in open round of crowd sale')
-    exchange_amount = neo_amount * CROWDSALE_TOKENS_PER_NEO
-    max_circulation_crowdsale = TOKEN_TOTAL_SUPPLY - TOKEN_TEAM_AMOUNT
-    new_circulation = current_in_circulation + exchange_amount
-    isBelowMaxCirculation = new_circulation < max_circulation_crowdsale
+    print('bonus round of crowd sale')
+    crowdsale_round_key = concat(CROWDSALE_ROUND, address)
+    amount_exchanged = Get(ctx, crowdsale_round_key)
 
-    if isBelowMaxCirculation:
+    exchange_amount = neo_amount * CROWDSALE_BONUS_ROUND_TOKENS_PER_NEO
+    max_circulation = TOKEN_TOTAL_SUPPLY - TOKEN_TEAM_AMOUNT
+    new_circulation = current_in_circulation + exchange_amount
+    isBelowMaxCirculation = new_circulation <= max_circulation
+
+    new_exchanged_neo_amount = neo_amount + amount_exchanged
+    isAboveMinExchange = CROWDSALE_NEO_MIN < new_exchanged_neo_amount
+    isBelowMaxExchange = new_exchanged_neo_amount < CROWDSALE_NEO_MAX
+
+    if isBelowMaxCirculation and isAboveMinExchange and isBelowMaxExchange:
+        if not verify_only:
+            Put(ctx, crowdsale_round_key, new_exchanged_neo_amount)
+        return exchange_amount
+
+    return 0
+
+def calculate_crowdsale_amount(ctx, address, neo_amount, current_in_circulation, verify_only):
+    """
+    Calculate the amount of tokens that can be exchanged in general crowdsale
+
+    :param ctx:GetContext() used to access contract storage
+    :param address: address to calculate amount for
+    :param neo_amount:int amount of neo attached for exchange
+    :param current_in_circulation:int amount tokens in circulation
+    :param verify_only:bool if this is the actual exchange, or just a verification
+
+    :return:int Amount of tokens to be exchanged
+    """
+
+    print('general round of crowd sale')
+    crowdsale_round_key = concat(CROWDSALE_ROUND, address)
+    amount_exchanged = Get(ctx, crowdsale_round_key)
+
+    contribution_rate = CROWDSALE_TOKENS_PER_NEO
+
+    if neo_amount >= 100:
+        contribution_rate = CROWDSALE_LARGE_CONTRIBUTION_TOKENS_PER_NEO
+
+    exchange_amount = neo_amount * contribution_rate
+    max_circulation = TOKEN_TOTAL_SUPPLY - TOKEN_TEAM_AMOUNT
+    new_circulation = current_in_circulation + exchange_amount
+    isBelowMaxCirculation = new_circulation <= max_circulation
+
+    new_exchanged_neo_amount = neo_amount + amount_exchanged
+    isAboveMinExchange = CROWDSALE_NEO_MIN < new_exchanged_neo_amount
+    isBelowMaxExchange = new_exchanged_neo_amount < CROWDSALE_NEO_MAX
+
+    if isBelowMaxCirculation and isAboveMinExchange and isBelowMaxExchange:
+        if not verify_only:
+            Put(ctx, crowdsale_round_key, new_exchanged_neo_amount)
         return exchange_amount
 
     return 0
