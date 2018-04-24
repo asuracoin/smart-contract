@@ -43,9 +43,11 @@ def crowdsale_status(ctx):
     :return:bool whether or not the sale is active
     """
 
-    isLimitsale = Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND
-    isCrowdsaleBonus = Get(ctx, SALE_STATUS_KEY) == CROWDSALE_BONUS_ROUND
-    isCrowdsale = Get(ctx, SALE_STATUS_KEY) == CROWDSALE_ROUND
+    sale_status = Get(ctx, SALE_STATUS_KEY)
+
+    isLimitsale = sale_status == LIMITSALE_ROUND
+    isCrowdsaleBonus = sale_status == CROWDSALE_BONUS_ROUND
+    isCrowdsale = sale_status == CROWDSALE_ROUND
 
     if isLimitsale or isCrowdsaleBonus or isCrowdsale:
         return True
@@ -140,7 +142,7 @@ def perform_exchange(ctx):
     didMint = mint_tokens(ctx, address, exchange_amount)
     # dispatch mintTokens event
     if didMint:
-        OnMintTokens(attachments[0], attachments[1], exchanged_tokens)
+        OnMintTokens(attachments[0], attachments[1], didMint)
 
     return didMint
 
