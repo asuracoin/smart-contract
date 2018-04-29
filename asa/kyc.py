@@ -16,6 +16,7 @@ def kyc_register(ctx, args):
 
     :param ctx:GetContext() used to access contract storage
     :param args:list a list of addresses to register
+
     :return:int The number of addresses registered for KYC
     """
 
@@ -38,6 +39,7 @@ def kyc_deregister(ctx, args):
 
     :param ctx:GetContext() used to access contract storage
     :param args:list a list of addresses to deregister
+    
     :return:int The number of addresses deregistered from KYC
     """
 

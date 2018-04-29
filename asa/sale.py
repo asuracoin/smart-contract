@@ -31,7 +31,7 @@ CROWDSALE_TOKENS_PER_NEO = 500 * 100_000_000 # 500 Tokens/NEO * 10^8
 SALE_NOT_STARTED_DETAILS = 'Token sale has not yet started. Please see asuracoin.io for more details.'
 LIMITSALE_DETAILS = 'Limit Round: 600 ASA/NEO, 1 NEO minumum, 50 NEO maximum'
 BONUS_SALE_DETAILS = 'Crowdsale Bonus Round: 575 ASA/NEO, 1 NEO minumum, 500 NEO maximum'
-SALE_DETAILS = 'Open Round: 500 ASA/NEO, 550 ASA/NEO is single contribution of 100 NEO or more, 500 NEO maximum'
+SALE_DETAILS = 'General Crowdsale Round: 500 ASA/NEO, 550 ASA/NEO is single contribution of 100 NEO or more, 500 NEO maximum'
 SALE_ENDED_DETAILS = 'Token sale has ended'
 
 def crowdsale_status(ctx):
