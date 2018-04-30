@@ -14,10 +14,8 @@ def start_limit_sale(ctx):
     """
 
     if CheckWitness(TOKEN_OWNER):
-        # start the limit sale if no sale started
-        if Get(ctx, SALE_STATUS_KEY) == b'':
-            Put(ctx, SALE_STATUS_KEY, LIMITSALE_ROUND)
-            return True
+        Put(ctx, SALE_STATUS_KEY, LIMITSALE_ROUND)
+        return True
 
     return False
 
@@ -31,10 +29,8 @@ def start_bonus_crowd_sale(ctx):
     """
 
     if CheckWitness(TOKEN_OWNER):
-        # start the bonus crowd sale if limit sale in progress
-        if Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND:
-            Put(ctx, SALE_STATUS_KEY, CROWDSALE_BONUS_ROUND)
-            return True
+        Put(ctx, SALE_STATUS_KEY, CROWDSALE_BONUS_ROUND)
+        return True
 
     return False
 
@@ -48,10 +44,8 @@ def start_crowd_sale(ctx):
     """
 
     if CheckWitness(TOKEN_OWNER):
-        # start the crowd sale if limit sale in progress
-        if Get(ctx, SALE_STATUS_KEY) == CROWDSALE_BONUS_ROUND:
-            Put(ctx, SALE_STATUS_KEY, CROWDSALE_ROUND)
-            return True
+        Put(ctx, SALE_STATUS_KEY, CROWDSALE_ROUND)
+        return True
 
     return False
 
@@ -65,10 +59,11 @@ def end_sale(ctx):
     """
 
     if CheckWitness(TOKEN_OWNER):
-        # end the crowd sale if in progress
-        if Get(ctx, SALE_STATUS_KEY) == CROWDSALE_ROUND:
+        # end the crowd sale, and set team token lockup date
+        if Get(ctx, SALE_STATUS_KEY) != b'':
             Put(ctx, SALE_STATUS_KEY, SALE_END)
-            Put(ctx, TOKEN_LOCKUP_START_KEY, get_now())
+            if Get(ctx, TOKEN_LOCKUP_START_KEY) == b'':
+                Put(ctx, TOKEN_LOCKUP_START_KEY, get_now())
             return True
 
     return False

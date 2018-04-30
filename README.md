@@ -118,10 +118,8 @@ In order to register all KYC addresses in a timely manner, this contracts allows
 
 
 ## Token Sale Management
-Please note that the contract is strict about executing the different rounds in a specific order
 
 #### Start the first limit round
-- Can only be started is no other sale as been started
 - Run command `testinvoke <CONTRACT_HASH> startLimitSale []`
 - Enter wallet password to submit invoke
 - Upon next block limit sale will start
@@ -131,7 +129,6 @@ Please note that the contract is strict about executing the different rounds in 
 
 #### Start the crowdsale bonus round
 - This will be the first hour of the crowdsale, as controlled by the admin
-- Can only be started if the limit sale is in progress
 - Run command `testinvoke <CONTRACT_HASH> startBonusCrowdSale []`
 - Enter wallet password to submit invoke
 - Upon next block crowdsale bonus round will start
@@ -141,7 +138,6 @@ Please note that the contract is strict about executing the different rounds in 
 
 #### Start the open crowdsale round
 - This will be the general crowdsale
-- Can only be started if the crowd sale bonus round is in progress
 - Run command `testinvoke <CONTRACT_HASH> startCrowdSale []`
 - Enter wallet password to submit invoke
 - Upon next block general crowdsale round will start
@@ -150,8 +146,8 @@ Please note that the contract is strict about executing the different rounds in 
   - Should return message starting with `General Crowdsale Round...`
 
 #### End the token sale
-- This will end the token sale
-- Can only be executed if the general crowd sale round is in progress
+- This will end the token sale, and start the timer for the 12 month token lockup
+- Can only be invoked if the token sale has already been started, can not be run before the start of the token sale to set the token lockup period early.
 - Run command `testinvoke <CONTRACT_HASH> endSale []`
 - Enter wallet password to submit invoke
 - Upon next block the token sale will have ended
