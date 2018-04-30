@@ -112,5 +112,8 @@ def Main(operation, args):
         elif operation == 'endSale':
             return end_sale(ctx)
 
+        elif operation == 'pauseSale':
+            return pause_sale(ctx)
+
 
     return False

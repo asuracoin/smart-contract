@@ -55,15 +55,30 @@ def end_sale(ctx):
 
     :param ctx:GetContext() used to access contract storage
 
-    :return:bool Whether starting the sale was successful
+    :return:bool Whether ending the sale was successful
+    """
+
+    if CheckWitness(TOKEN_OWNER) and Get(ctx, SALE_STATUS_KEY) != b'':
+        # end the crowd sale, and set team token lockup date
+        Put(ctx, SALE_STATUS_KEY, SALE_END)
+        if Get(ctx, TOKEN_LOCKUP_START_KEY) == b'':
+            Put(ctx, TOKEN_LOCKUP_START_KEY, get_now())
+        return True
+
+    return False
+
+
+def pause_sale(ctx):
+    """
+    Pause the token sale
+
+    :param ctx:GetContext() used to access contract storage
+
+    :return:bool Whether pausing the sale was successful
     """
 
     if CheckWitness(TOKEN_OWNER):
-        # end the crowd sale, and set team token lockup date
-        if Get(ctx, SALE_STATUS_KEY) != b'':
-            Put(ctx, SALE_STATUS_KEY, SALE_END)
-            if Get(ctx, TOKEN_LOCKUP_START_KEY) == b'':
-                Put(ctx, TOKEN_LOCKUP_START_KEY, get_now())
-            return True
+        Put(ctx, SALE_STATUS_KEY, SALE_PAUSED)
+        return True
 
     return False

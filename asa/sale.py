@@ -16,6 +16,7 @@ LIMITSALE_ROUND = b'limit_sale'
 CROWDSALE_BONUS_ROUND = b'crowd_sale_bonus'
 CROWDSALE_ROUND = b'crowd_sale'
 SALE_END = b'sale_end'
+SALE_PAUSED = b'sale_paused'
 
 LIMITSALE_NEO_MIN = 1 # NEO
 LIMITSALE_NEO_MAX = 50 # NEO
@@ -33,6 +34,7 @@ LIMITSALE_DETAILS = 'Limit Round: 600 ASA/NEO, 1 NEO minumum, 50 NEO maximum'
 BONUS_SALE_DETAILS = 'Crowdsale Bonus Round: 575 ASA/NEO, 1 NEO minumum, 500 NEO maximum'
 SALE_DETAILS = 'General Crowdsale Round: 500 ASA/NEO, 550 ASA/NEO is single contribution of 100 NEO or more, 500 NEO maximum'
 SALE_ENDED_DETAILS = 'Token sale has ended'
+SALE_PAUSED_DETAILS = 'Token sale has be paused by contract owner'
 
 def crowdsale_status(ctx):
     """
@@ -43,11 +45,11 @@ def crowdsale_status(ctx):
     :return:bool whether or not the sale is active
     """
 
-    sale_status = Get(ctx, SALE_STATUS_KEY)
+    saleStatus = Get(ctx, SALE_STATUS_KEY)
 
-    isLimitsale = sale_status == LIMITSALE_ROUND
-    isCrowdsaleBonus = sale_status == CROWDSALE_BONUS_ROUND
-    isCrowdsale = sale_status == CROWDSALE_ROUND
+    isLimitsale = saleStatus == LIMITSALE_ROUND
+    isCrowdsaleBonus = saleStatus == CROWDSALE_BONUS_ROUND
+    isCrowdsale = saleStatus == CROWDSALE_ROUND
 
     if isLimitsale or isCrowdsaleBonus or isCrowdsale:
         return True
@@ -63,17 +65,22 @@ def crowdsale_details(ctx):
     :return:string details about the crowdsale status, specific to round
     """
 
-    if Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND:
+    saleStatus = Get(ctx, SALE_STATUS_KEY)
+
+    if saleStatus == LIMITSALE_ROUND:
         return LIMITSALE_DETAILS
 
-    if Get(ctx, SALE_STATUS_KEY) == CROWDSALE_BONUS_ROUND:
+    if saleStatus == CROWDSALE_BONUS_ROUND:
         return BONUS_SALE_DETAILS
 
-    if Get(ctx, SALE_STATUS_KEY) == CROWDSALE_ROUND:
+    if saleStatus == CROWDSALE_ROUND:
         return SALE_DETAILS
 
-    if Get(ctx, SALE_STATUS_KEY) == SALE_END:
+    if saleStatus == SALE_END:
         return SALE_ENDED_DETAILS
+
+    if saleStatus == SALE_PAUSED:
+        return SALE_PAUSED_DETAILS
 
     return SALE_NOT_STARTED_DETAILS
 
@@ -103,11 +110,14 @@ def crowdsale_available_amount(ctx):
     :return:int amount of tokens still available in the crowdsale
     """
 
-    isLimitsale = Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND
-    isCrowdsaleBonus = Get(ctx, SALE_STATUS_KEY) == CROWDSALE_BONUS_ROUND
-    isCrowdsale = Get(ctx, SALE_STATUS_KEY) == CROWDSALE_ROUND
+    saleStatus = Get(ctx, SALE_STATUS_KEY)
 
-    if not isLimitsale and not isCrowdsaleBonus and not isCrowdsale:
+    isLimitsale = saleStatus == LIMITSALE_ROUND
+    isCrowdsaleBonus = saleStatus == CROWDSALE_BONUS_ROUND
+    isCrowdsale = saleStatus == CROWDSALE_ROUND
+    isSalePaused = saleStatus == SALE_PAUSED
+
+    if not isLimitsale and not isCrowdsaleBonus and not isCrowdsale and not isSalePaused:
         return 0
 
     in_circ = Get(ctx, TOKEN_CIRC_KEY)
@@ -176,6 +186,11 @@ def calculate_exchange_amount(ctx, attachments, verify_only):
     # if the sale has not yet started no amount can be exchanged
     if Get(ctx, SALE_STATUS_KEY) == b'':
         print('token sale has not started yet')
+        return 0
+
+    # if the token sale is paused dont allow any exchanges
+    if Get(ctx, SALE_STATUS_KEY) == SALE_PAUSED:
+        print('token sale has be paused')
         return 0
 
     current_in_circulation = Get(ctx, TOKEN_CIRC_KEY)

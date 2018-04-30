@@ -155,6 +155,16 @@ In order to register all KYC addresses in a timely manner, this contracts allows
   - Run read command `testinvoke <CONTRACT_HASH> saleDetails []`
   - Should return message `Token sale has ended`
 
+#### Pause the token sale
+- This will pause the token sale
+- Run command `testinvoke <CONTRACT_HASH> pauseSale []`
+- Enter wallet password to submit invoke
+- Upon next block the token sale will be paused
+- Confirm sale has been paused
+  - Run read command `testinvoke <CONTRACT_HASH> saleDetails []`
+  - Should return message `Token sale has be paused by contract owner`
+- NOTE: To resume token sales, call a start method of a specific sales round (eg. `startCrowdSale`)
+
 ## Team tokens
 - These will be locked up from distribution for 12 months starting from the timestamp recorded on token sale end
 - Once the 12 month lock up is completed, you can sent funds from the token pool to any address from the token owner address
