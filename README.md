@@ -70,11 +70,13 @@ This is the smart contract code for the Asura World token Asura Coin (ASA)
 
 ## KYC Management
 #### Register KYC Addresses
-- Run command `testinvoke <CONTRACT_HASH> kycRegister ['<ADDRESS_1>','<ADDRESS_2>',...,'<ADDRESS_16>']`
-  - Up to 16 addresses in a single call
+- Run command `testinvoke <CONTRACT_HASH> kycRegister ['<ADDRESS_1>','<ADDRESS_2>',...,'<ADDRESS_8>']`
+  - Recommended up to 8 addresses in a single call to stay within 10 free GAS per invoke
   - Count will be returned to validate number of addresses registered
   - Enter wallet password after executing command
   - Wait for next block to confirm address registrations
+- NOTE: If being called by KYC admin that is not the token owner, the first address in arguments must be address of KYC admin making invoke
+  - `testinvoke <CONTRACT_HASH> kycRegister ['<KYC_ADMIN_ADDRESS>','<ADDRESS_1>','<ADDRESS_2>',...,'<ADDRESS_8>']`
 
 #### Check KYC Status
 - To check if an address has already been registered for KYC
@@ -83,11 +85,37 @@ This is the smart contract code for the Asura World token Asura Coin (ASA)
 
 #### Deregister KYC Addresses
 - If for any reason you need to de-register addresses from KYC
-- Run command `testinvoke <CONTRACT_HASH> kycDeregister ['<ADDRESS_1>','<ADDRESS_2>',...,'<ADDRESS_16>']`
-  - Up to 16 addresses in a single call
+- Run command `testinvoke <CONTRACT_HASH> kycDeregister ['<ADDRESS_1>','<ADDRESS_2>',...,'<ADDRESS_8>']`
+  - Recommended up to 8 addresses in a single call to stay within 10 free GAS per invoke
   - Count will be returned to validate number of addresses de-registered
   - Enter wallet password after executing command
   - Wait for next block to confirm address registrations
+- NOTE: If being called by KYC admin that is not the token owner, the first address in arguments must be address of KYC admin making invoke
+  - `testinvoke <CONTRACT_HASH> kycDeregister ['<KYC_ADMIN_ADDRESS>','<ADDRESS_1>','<ADDRESS_2>',...,'<ADDRESS_8>']`
+
+### KYC Admins
+In order to register all KYC addresses in a timely manner, this contracts allows the contract owner to register and deregister other addresses to assist with KYC registration process. This way host of ICO can quickly register many KYC addresses within the 10 free GAS limit, in a matter of minutes rather than days/hours.
+
+#### Register KYC Admin Addresses
+- Run command `testinvoke <CONTRACT_HASH> kycRegisterAdmin ['<ADDRESS_1>','<ADDRESS_2>',...,'<ADDRESS_8>']`
+  - Recommended up to 8 addresses in a single call to stay within 10 free GAS per invoke
+  - Count will be returned to validate number of addresses registered
+  - Enter wallet password after executing command
+  - Wait for next block to confirm address registrations
+
+#### Check KYC Admin Status
+- To check if an address has already been registered for KYC
+- Run read command
+  - `testinvoke <CONTRACT_HASH> kycAdminStatus ['<ADDRESS>']`
+
+#### Deregister KYC Admin Addresses
+- If for any reason you need to de-register addresses from KYC
+- Run command `testinvoke <CONTRACT_HASH> kycDeregisterAdmin ['<ADDRESS_1>','<ADDRESS_2>',...,'<ADDRESS_8>']`
+  - Recommended up to 8 addresses in a single call to stay within 10 free GAS per invoke
+  - Count will be returned to validate number of addresses de-registered
+  - Enter wallet password after executing command
+  - Wait for next block to confirm address registrations
+
 
 ## Token Sale Management
 Please note that the contract is strict about executing the different rounds in a specific order

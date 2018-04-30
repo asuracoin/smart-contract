@@ -4,7 +4,7 @@ from boa.interop.Neo.Storage import GetContext
 from asa.utils.txio import get_asset_attachments
 from asa.nep5 import NEP5_METHODS, handle_nep51
 from asa.token import TOKEN_OWNER, deploy, get_circulation
-from asa.kyc import kyc_register, kyc_unregister, kyc_status
+from asa.kyc import kyc_register, kyc_unregister, kyc_status, kyc_register_admin, kyc_deregister_admin, get_kyc_admin_status
 from asa.sale import perform_exchange, crowdsale_available_amount
 from asa.saleAdmin import *
 
@@ -69,6 +69,15 @@ def Main(operation, args):
 
         elif operation == 'kycStatus':
             return kyc_status(ctx, args)
+
+        elif operation == 'kycRegisterAdmin':
+            return kyc_register_admin(ctx, args)
+
+        elif operation == 'kycDeregisterAdmin':
+            return kyc_deregister_admin(ctx, args)
+
+        elif operation == 'kycAdminStatus':
+            return kyc_admin_status(ctx, args)
 
 
         # CROWDSALE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
