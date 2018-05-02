@@ -18,16 +18,18 @@ CROWDSALE_ROUND = b'crowd_sale'
 SALE_END = b'sale_end'
 SALE_PAUSED = b'sale_paused'
 
-LIMITSALE_NEO_MIN = 1 # NEO
-LIMITSALE_NEO_MAX = 50 # NEO
+LIMITSALE_NEO_MIN = 1 * 100_000_000 # NEO * 10^8
+LIMITSALE_NEO_MAX = 50 * 100_000_000 # NEO * 10^8
 
-CROWDSALE_NEO_MIN = 1 # NEO
-CROWDSALE_NEO_MAX = 500 # NEO
+CROWDSALE_NEO_MIN = 1 * 100_000_000 # NEO * 10^8
+CROWDSALE_NEO_MAX = 500 * 100_000_000 # NEO * 10^8
 
-LIMITSALE_TOKENS_PER_NEO = 600 * 100_000_000 # 600 Tokens/NEO * 10^8 (500*1.2=600)
-CROWDSALE_BONUS_ROUND_TOKENS_PER_NEO = 575 * 100_000_000 # 575 Tokens/NEO * 10^8 (500*1.15=575)
-CROWDSALE_LARGE_CONTRIBUTION_TOKENS_PER_NEO = 550 * 100_000_000 # 550 Tokens/NEO * 10^8 (500*1.1=550)
-CROWDSALE_TOKENS_PER_NEO = 500 * 100_000_000 # 500 Tokens/NEO * 10^8
+CROWDSALE_LARGE_CONTRIBUTION = 100 * 100_000_000 # NEO * 10^8
+
+LIMITSALE_TOKENS_PER_NEO = 600 # 600 Tokens/NEO (500*1.2=600)
+CROWDSALE_BONUS_ROUND_TOKENS_PER_NEO = 575 # 575 Tokens/NEO (500*1.15=575)
+CROWDSALE_LARGE_CONTRIBUTION_TOKENS_PER_NEO = 550 # 550 Tokens/NEO (500*1.1=550)
+CROWDSALE_TOKENS_PER_NEO = 500 # 500 Tokens/NEO
 
 SALE_NOT_STARTED_DETAILS = 'Token sale has not yet started. Please see asuracoin.io for more details.'
 LIMITSALE_DETAILS = 'Limit Round: 600 ASA/NEO, 1 NEO minumum, 50 NEO maximum'
@@ -182,14 +184,15 @@ def calculate_exchange_amount(ctx, attachments, verify_only):
         return 0
 
     current_timestamp = get_now()
+    saleStatus = Get(ctx, SALE_STATUS_KEY)
 
     # if the sale has not yet started no amount can be exchanged
-    if Get(ctx, SALE_STATUS_KEY) == b'':
+    if saleStatus == b'':
         print('token sale has not started yet')
         return 0
 
     # if the token sale is paused dont allow any exchanges
-    if Get(ctx, SALE_STATUS_KEY) == SALE_PAUSED:
+    if saleStatus == SALE_PAUSED:
         print('token sale has be paused')
         return 0
 
@@ -197,14 +200,14 @@ def calculate_exchange_amount(ctx, attachments, verify_only):
 
     # if are still in the limit round of the crowdsale
     # ensure only amount abides but limit round rules
-    if Get(ctx, SALE_STATUS_KEY) == LIMITSALE_ROUND:
+    if saleStatus == LIMITSALE_ROUND:
         return calculate_limitsale_amount(ctx, address, neo_amount, current_in_circulation, verify_only)
 
-    if Get(ctx, SALE_STATUS_KEY) == CROWDSALE_BONUS_ROUND:
+    if saleStatus == CROWDSALE_BONUS_ROUND:
         return calculate_crowdsale_bonus_round_amount(ctx, address, neo_amount, current_in_circulation, verify_only)
 
     # calculate amount if still in crowdsale timeline
-    if Get(ctx, SALE_STATUS_KEY) == CROWDSALE_ROUND:
+    if saleStatus == CROWDSALE_ROUND:
         return calculate_crowdsale_amount(ctx, address, neo_amount, current_in_circulation, verify_only)
 
     return 0
@@ -232,8 +235,8 @@ def calculate_limitsale_amount(ctx, address, neo_amount, current_in_circulation,
     isBelowMaxCirculation = new_circulation < max_circulation_limit_round
 
     new_exchanged_neo_amount = neo_amount + amount_exchanged
-    isAboveMinExchange = LIMITSALE_NEO_MIN < new_exchanged_neo_amount
-    isBelowMaxExchange = new_exchanged_neo_amount < LIMITSALE_NEO_MAX
+    isAboveMinExchange = LIMITSALE_NEO_MIN <= new_exchanged_neo_amount
+    isBelowMaxExchange = new_exchanged_neo_amount <= LIMITSALE_NEO_MAX
 
     if isBelowMaxCirculation and isAboveMinExchange and isBelowMaxExchange:
         if not verify_only:
@@ -265,8 +268,8 @@ def calculate_crowdsale_bonus_round_amount(ctx, address, neo_amount, current_in_
     isBelowMaxCirculation = new_circulation <= max_circulation
 
     new_exchanged_neo_amount = neo_amount + amount_exchanged
-    isAboveMinExchange = CROWDSALE_NEO_MIN < new_exchanged_neo_amount
-    isBelowMaxExchange = new_exchanged_neo_amount < CROWDSALE_NEO_MAX
+    isAboveMinExchange = CROWDSALE_NEO_MIN <= new_exchanged_neo_amount
+    isBelowMaxExchange = new_exchanged_neo_amount <= CROWDSALE_NEO_MAX
 
     if isBelowMaxCirculation and isAboveMinExchange and isBelowMaxExchange:
         if not verify_only:
@@ -294,7 +297,7 @@ def calculate_crowdsale_amount(ctx, address, neo_amount, current_in_circulation,
 
     contribution_rate = CROWDSALE_TOKENS_PER_NEO
 
-    if neo_amount >= 100:
+    if neo_amount >= CROWDSALE_LARGE_CONTRIBUTION:
         contribution_rate = CROWDSALE_LARGE_CONTRIBUTION_TOKENS_PER_NEO
 
     exchange_amount = neo_amount * contribution_rate
@@ -303,8 +306,8 @@ def calculate_crowdsale_amount(ctx, address, neo_amount, current_in_circulation,
     isBelowMaxCirculation = new_circulation <= max_circulation
 
     new_exchanged_neo_amount = neo_amount + amount_exchanged
-    isAboveMinExchange = CROWDSALE_NEO_MIN < new_exchanged_neo_amount
-    isBelowMaxExchange = new_exchanged_neo_amount < CROWDSALE_NEO_MAX
+    isAboveMinExchange = CROWDSALE_NEO_MIN <= new_exchanged_neo_amount
+    isBelowMaxExchange = new_exchanged_neo_amount <= CROWDSALE_NEO_MAX
 
     if isBelowMaxCirculation and isAboveMinExchange and isBelowMaxExchange:
         if not verify_only:
