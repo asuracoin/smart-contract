@@ -1,4 +1,3 @@
 .DS_Store
-**/*.avm
 **/*.debug.json
 __pycache__/
