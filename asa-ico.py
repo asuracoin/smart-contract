@@ -53,10 +53,10 @@ def Main(operation, args):
             return get_circulation(ctx)
 
         elif operation == 'transferTeamTokens':
-            return transfer_team_tokens(ctx)
+            return transfer_team_tokens(ctx, args)
 
         elif operation == 'transferGrowthTokens':
-            return transfer_growth_tokens(ctx)
+            return transfer_growth_tokens(ctx, args)
 
 
         # KYC ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -189,7 +189,7 @@ def transfer_growth_tokens(ctx, args):
         print('Growth token lockup period has not yet started')
         return False
 
-    lockup_end = lockup_start + TOKEN_TEAM_LOCKUP_PERIOD
+    lockup_end = lockup_start + TOKEN_GROWTH_LOCKUP_PERIOD
 
     # growth tokens cant be transfered before lockup period is over
     if get_now() < lockup_end:
