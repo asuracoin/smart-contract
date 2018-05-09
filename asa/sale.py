@@ -26,15 +26,15 @@ CROWDSALE_NEO_MAX = 500 * 100_000_000 # NEO * 10^8
 
 CROWDSALE_LARGE_CONTRIBUTION = 100 * 100_000_000 # NEO * 10^8
 
-LIMITSALE_TOKENS_PER_NEO = 600 # 600 Tokens/NEO (500*1.2=600)
-CROWDSALE_BONUS_ROUND_TOKENS_PER_NEO = 575 # 575 Tokens/NEO (500*1.15=575)
-CROWDSALE_LARGE_CONTRIBUTION_TOKENS_PER_NEO = 550 # 550 Tokens/NEO (500*1.1=550)
-CROWDSALE_TOKENS_PER_NEO = 500 # 500 Tokens/NEO
+LIMITSALE_TOKENS_PER_NEO = 6000 # 6000 Tokens/NEO (5000*1.2=6000)
+CROWDSALE_BONUS_ROUND_TOKENS_PER_NEO = 5750 # 5750 Tokens/NEO (5000*1.15=5750)
+CROWDSALE_LARGE_CONTRIBUTION_TOKENS_PER_NEO = 5500 # 5500 Tokens/NEO (5000*1.1=5500)
+CROWDSALE_TOKENS_PER_NEO = 5000 # 5000 Tokens/NEO
 
 SALE_NOT_STARTED_DETAILS = 'Token sale has not yet started. Please see asuracoin.io for more details.'
-LIMITSALE_DETAILS = 'Limit Round: 600 ASA/NEO, 1 NEO minumum, 50 NEO maximum'
-BONUS_SALE_DETAILS = 'Crowdsale Bonus Round: 575 ASA/NEO, 1 NEO minumum, 500 NEO maximum'
-SALE_DETAILS = 'General Crowdsale Round: 500 ASA/NEO, 550 ASA/NEO is single contribution of 100 NEO or more, 500 NEO maximum'
+LIMITSALE_DETAILS = 'Limit Round: 6000 ASA/NEO, 1 NEO minumum, 50 NEO maximum'
+BONUS_SALE_DETAILS = 'Crowdsale Bonus Round: 5750 ASA/NEO, 1 NEO minumum, 500 NEO maximum'
+SALE_DETAILS = 'General Crowdsale Round: 5000 ASA/NEO, 5500 ASA/NEO is single contribution of 100 NEO or more, 500 NEO maximum'
 SALE_ENDED_DETAILS = 'Token sale has ended'
 SALE_PAUSED_DETAILS = 'Token sale has be paused by contract owner'
 
