@@ -24,16 +24,15 @@ def kyc_register(ctx, args):
     """
 
     ok_count = 0
-    addresses = args
 
     canRegister = CheckWitness(TOKEN_OWNER)
 
-    if not canRegister and get_kyc_admin_status(args[0]) and CheckWitness(args[0]):
+    if not canRegister and get_kyc_admin_status(ctx, args[0]) and CheckWitness(args[0]):
         canRegister = True
-        addresses = args[1:]
+        args.remove(0)
 
     if canRegister:
-        for address in addresses:
+        for address in args:
             # validate the address is 20 bytes
             if len(address) == 20:
                 Put(ctx, concat(KYC_KEY, address), True)
@@ -54,13 +53,12 @@ def kyc_deregister(ctx, args):
     """
 
     ok_count = 0
-    addresses = args
 
     canRegister = CheckWitness(TOKEN_OWNER)
 
-    if not canRegister and get_kyc_admin_status(args[0]) and CheckWitness(args[0]):
+    if not canRegister and get_kyc_admin_status(ctx, args[0]) and CheckWitness(args[0]):
         canRegister = True
-        addresses = args[1:]
+        args.remove(0)
 
     if canRegister:
         for address in args:
