@@ -25,6 +25,9 @@ def handle_nep51(ctx, operation, args):
         return Get(ctx, TOKEN_CIRC_KEY)
 
     elif operation == 'balanceOf':
+        if len(args[0]) != 20:
+            return False
+
         if len(args) == 1:
             return Get(ctx, args[0])
 
@@ -94,6 +97,12 @@ def do_transfer_from(ctx, t_from, t_to, amount):
     if amount <= 0:
         return False
 
+    if len(t_from) != 20:
+        return False
+
+    if len(t_to) != 20:
+        return False
+
     available_key = concat(t_from, t_to)
 
     if len(available_key) != 40:
@@ -137,6 +146,9 @@ def do_transfer_from(ctx, t_from, t_to, amount):
 
 
 def do_approve(ctx, t_owner, t_spender, amount):
+
+    if len(t_spender) != 20:
+        return False
 
     if not CheckWitness(t_owner):
         return False
