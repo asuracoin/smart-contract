@@ -105,9 +105,6 @@ def do_transfer_from(ctx, t_from, t_to, amount):
 
     available_key = concat(t_from, t_to)
 
-    if len(available_key) != 40:
-        return False
-
     available_to_to_addr = Get(ctx, available_key)
 
     if available_to_to_addr < amount:
