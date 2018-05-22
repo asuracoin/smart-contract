@@ -2,7 +2,7 @@ from boa.interop.Neo.Runtime import GetTrigger, CheckWitness, Notify
 from boa.interop.Neo.TriggerType import Application, Verification
 from boa.interop.Neo.Storage import GetContext
 from asa.utils.txio import get_asset_attachments
-from asa.nep5 import NEP5_METHODS, handle_nep51
+from asa.nep5 import NEP5_METHODS, handle_nep5
 from asa.token import TOKEN_OWNER, deploy, get_circulation
 from asa.kyc import kyc_register, kyc_unregister, kyc_status, kyc_register_admin, kyc_deregister_admin, get_kyc_admin_status
 from asa.sale import perform_exchange, crowdsale_available_amount
@@ -41,7 +41,7 @@ def Main(operation, args):
 
         for op in NEP5_METHODS:
             if operation == op:
-                return handle_nep51(ctx, operation, args)
+                return handle_nep5(ctx, operation, args)
 
 
         # TOKEN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
