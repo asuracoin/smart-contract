@@ -154,7 +154,7 @@ def perform_exchange(ctx):
     didMint = mint_tokens(ctx, address, exchange_amount)
     # dispatch mintTokens event
     if didMint:
-        OnMintTokens(attachments[0], attachments[1], didMint)
+        OnMintTokens(attachments[0], address, exchange_amount)
 
     return didMint
 
